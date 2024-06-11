@@ -3,6 +3,7 @@ from pydrive2.drive import GoogleDrive
 from pydrive2.auth import GoogleAuth, ServiceAccountCredentials
 import os
 import json
+from google.cloud import storage
 
 GOOGLE_SERVICE_ACCOUNT_JSON = json.loads(os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON"))
 
@@ -16,3 +17,11 @@ def authenticate_drive() -> GoogleDrive:
     drive = GoogleDrive(gauth)
     logger.info(f"Generado objeto GoogleDrive para autenticación")
     return drive
+
+@task
+def authenticate_gcs() -> storage.Client:
+    """Autenticarse en Google Cloud Storage y regresar un objeto storage.Client"""
+    logger = get_run_logger()
+    storage_client = storage.Client.from_service_account_json(GOOGLE_SERVICE_ACCOUNT_JSON)
+    logger.info(f"Generado objeto storage.Client para autenticación")
+    return storage_client
