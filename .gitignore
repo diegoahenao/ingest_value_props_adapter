@@ -2,5 +2,5 @@
 __pycache__/
 *.py[cod]
 
-# Archivos de ambiente
+# Archivos de entorno
 .env
