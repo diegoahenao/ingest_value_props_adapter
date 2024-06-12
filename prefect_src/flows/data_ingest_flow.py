@@ -5,7 +5,10 @@ from tasks.auth_task import (
 )
 from typing import List
 import os
-from tasks.get_data import get_files_from_drive_to_gcs
+from tasks.get_data import (
+    get_files_from_drive_to_gcs,
+    read_lines_from_gcs
+)
 
 files_to_process: List[str] = ["taps.json", "prints.json", "pays.csv"]
 google_drive_folder_id: str = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
@@ -17,7 +20,9 @@ def main_flow() -> None:
     drive = authenticate_drive()
     storage_client = authenticate_gcs()
     for file_name in files_to_process:
-        get_files_from_drive_to_gcs(drive, storage_client, google_drive_folder_id, file_name, bucket_name)
+        #get_files_from_drive_to_gcs(drive, storage_client, google_drive_folder_id, file_name, bucket_name)
+        lines = read_lines_from_gcs(bucket_name, file_name, storage_client)
+        print("----->", lines)
 
 if __name__ == "__main__":
     main_flow()

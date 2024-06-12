@@ -5,7 +5,7 @@ import os
 import json
 from google.cloud import storage
 
-GOOGLE_SERVICE_ACCOUNT_JSON = json.loads(os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON"))
+GOOGLE_SERVICE_ACCOUNT_JSON: str = json.loads(os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON"))
 
 @task
 def authenticate_drive() -> GoogleDrive:
