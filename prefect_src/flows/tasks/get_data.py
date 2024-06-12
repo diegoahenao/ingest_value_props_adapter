@@ -82,3 +82,32 @@ def read_lines_from_gcs(bucket_name: str, file_name: str, storage_client: storag
     except Exception as e:
         logger.error(f"Error leyendo el archivo {file_name} desde el GCS: {e}")
         raise
+
+@task
+def batch_lines(lines: Generator[List[str], None, None], batch_size: int) -> List[list[List[str]]]:
+    """Agrupar las filas en batches de un tamaño especifico
+    
+    Args:
+        lines (Generator[List[str], None, None]): Un generador de lineas.
+        batch_size (int): Tamaño del batch.
+    
+    Returns:
+        List[List[List[str]]]: Una lista de batches de filas.
+    """
+    logger = get_run_logger()
+    logger.info(f"Batching {len(lines)} lineas en batches de tamaño {batch_size}.")
+    batches = []
+    batch = []
+    try:
+        for line in lines:
+            batch.append(line)
+            if len(batch) == batch_size:
+                batches.append(batch)
+                batch = []
+        if batch:
+            batches.append(batch)
+    except Exception as e:
+        logger.error(f"Error ocurrido mientras se agrupan las lineas: {e}")
+        raise
+    logger.info(f"Creados exitosamente {len(batches)} batches.")
+    return batches
