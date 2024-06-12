@@ -22,7 +22,7 @@ def main_flow() -> None:
     drive = authenticate_drive()
     storage_client = authenticate_gcs()
     for file_name in files_to_process:
-        #get_files_from_drive_to_gcs(drive, storage_client, google_drive_folder_id, file_name, bucket_name)
+        get_files_from_drive_to_gcs(drive, storage_client, google_drive_folder_id, file_name, bucket_name)
         lines = read_lines_from_gcs(bucket_name, file_name, storage_client)
         batches = batch_lines(lines, batch_size)
 
