@@ -42,37 +42,35 @@ def read_lines_from_gcs(file_name: str, file_content: io.BytesIO) -> Generator[L
         List[str]: Lista con las lineas del archivo leido.
     """
     logger = get_run_logger()
-    logger.info(f"Leyendo archivo {file_name}...")
+    logger.info(f"Leyendo archivo {file_name} desde el bucket {bucket_name}...")
     try:
         cleaned_filename = os.path.splitext(file_name)[0]
-        file_content.seek(0)
-        if cleaned_filename in ["taps", "prints"]:
-            for line in file_content:
-                try:
-                    json_obj = json.loads(line.strip())
-                    yield {
-                        "day": json_obj.get("day"),
-                        "position": json_obj.get("event_data", {}).get("position"),
-                        "value": json_obj.get("event_data", {}).get("value_prop"),
-                        "user_id": json_obj.get("user_id")
-                    }
-                except json.JSONDecodeError as e:
-                    logger.error(f"Error al decodificar JSON en línea: {line.strip()} - Error: {e}")
-        elif cleaned_filename == "pays":
-            file_content.seek(0)
-            reader = csv.reader(io.TextIOWrapper(file_content, encoding='utf-8'))
-            for line in reader:
-                try:
-                    line_data = {
-                        "pay_date": line[0],
-                        "total": line[1],
-                        "user_id": line[2],
-                        "value_prop": line[3]
-                    }
-                    yield line_data
-                except IndexError as e:
-                    logger.error(f"Error al procesar linea CSV: {line} - Error: {e}")
-                    
+        with blob.open("rt") as file:
+            if cleaned_filename in ["taps", "prints"]:
+                for line in file:
+                    try:
+                        json_obj = json.loads(line.strip())
+                        yield {
+                            "day": json_obj.get("day"),
+                            "position": json_obj.get("event_data", {}).get("position"),
+                            "value_prop": json_obj.get("event_data", {}).get("value_prop"),
+                            "user_id": json_obj.get("user_id")
+                        }
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Error al decodificar JSON en línea: {line.strip()} - Error: {e}")
+            elif cleaned_filename == "pays":
+                reader = csv.reader(file)
+                for line in reader:
+                    try:
+                        line_data = {
+                            "pay_date": line[0],
+                            "total": line[1],
+                            "user_id": line[2],
+                            "value_prop": line[3]
+                        }
+                        yield line_data
+                    except IndexError as e:
+                        logger.error(f"Error al procesar linea CSV: {line} - Error: {e}")                    
     except Exception as e:
         logger.error(f"Error leyendo el archivo {file_name}: {e}")
         raise
