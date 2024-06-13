@@ -47,7 +47,6 @@ def read_lines_from_gcs(bucket_name: str, file_name: str, storage_client: storag
     """
     logger = get_run_logger()
     logger.info(f"Leyendo archivo {file_name} desde el bucket {bucket_name}...")
-    json_objects = []
     try:
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(file_name)
@@ -60,7 +59,7 @@ def read_lines_from_gcs(bucket_name: str, file_name: str, storage_client: storag
                         yield {
                             "day": json_obj.get("day"),
                             "position": json_obj.get("event_data", {}).get("position"),
-                            "value": json_obj.get("event_data", {}).get("value_prop"),
+                            "value_prop": json_obj.get("event_data", {}).get("value_prop"),
                             "user_id": json_obj.get("user_id")
                         }
                     except json.JSONDecodeError as e:
