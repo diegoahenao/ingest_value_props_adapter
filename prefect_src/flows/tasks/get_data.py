@@ -9,38 +9,34 @@ import csv
 
 
 @task
-def get_files_from_drive_to_gcs(drive: GoogleDrive, storage_client: storage.Client, google_drive_folder_id: str, file_name: str, bucket_name: str) -> None:
-    """Transferir archivos de Google Drive a Google Cloud Storage.
+def get_files_from_drive(drive: GoogleDrive, google_drive_folder_id: str, file_name: str) -> None:
+    """Obtener archivos desde Google Drive.
     
     Args:
         drive (GoogleDrive): Un objeto de Google Drive para autenticación.
         google_drive_folder_id (str): ID del directorio de Google Drive.
         file_name (str): Nombre del archivo para transferir.
-        bucket_name (str): Nombre del bucket de Google Cloud Storage donde el archivo será cargado
     """
     logger = get_run_logger()
-    logger.info(f"Transfiriendo {file_name} de Google Drive a Google Cloud Storage...")
+    logger.info(f"Obteniendo {file_name} de Google Drive...")
     try:
         file_list = drive.ListFile({'q': f"'{google_drive_folder_id}' in parents and title='{file_name}'"}).GetList()
         if file_list:
            file = file_list[0]
            file_content = io.BytesIO(file.GetContentString(mimetype='application/octet-stream').encode('utf-8'))
-           bucket = storage_client.bucket(bucket_name)
-           blob = bucket.blob(file_name)
-           blob.upload_from_file(file_content, rewind=True)
-           logger.info(f"Transferencia exitosa del archivo {file_name} al bucket {bucket_name}")
+           logger.info(f"El archivo {file_name} fue encontrado")
         else:
            logger.warning(f"El archivo {file_name} no fue encontrado en el folder de Google Drive")
     except Exception as e:
         logger.error(f"Error al transferir {file_name} desde Google Drive al Google Cloud Storage: {e}")
+    return file_content
 
 @task
-def read_lines_from_gcs(bucket_name: str, file_name: str, storage_client: storage.Client) -> Generator[List[str], None, None]:
-    """Leer cada linea de un archivo desde Google Cloud Storage
+def read_lines_from_gcs(file_name: str, file_content: io.BytesIO) -> Generator[List[str], None, None]:
+    """Leer cada linea de un archivo
     Args:
-        bucket_name (str): Nombre del bucket de Google Cloud Storage.
         file_name (str): Nombre del archivo.
-        storage_client (storage.Client): Objeto storage.Client para conectarse a Google Cloud Storage.
+        file_content (io.BytesIO): Contenido del archivo en un objeto BytesIO.
 
     Yields:
         List[str]: Lista con las lineas del archivo leido.
@@ -48,8 +44,6 @@ def read_lines_from_gcs(bucket_name: str, file_name: str, storage_client: storag
     logger = get_run_logger()
     logger.info(f"Leyendo archivo {file_name} desde el bucket {bucket_name}...")
     try:
-        bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(file_name)
         cleaned_filename = os.path.splitext(file_name)[0]
         with blob.open("rt") as file:
             if cleaned_filename in ["taps", "prints"]:
@@ -76,10 +70,9 @@ def read_lines_from_gcs(bucket_name: str, file_name: str, storage_client: storag
                         }
                         yield line_data
                     except IndexError as e:
-                        logger.error(f"Error al procesar linea CSV: {line} - Error: {e}")
-                    
+                        logger.error(f"Error al procesar linea CSV: {line} - Error: {e}")                    
     except Exception as e:
-        logger.error(f"Error leyendo el archivo {file_name} desde el GCS: {e}")
+        logger.error(f"Error leyendo el archivo {file_name}: {e}")
         raise
 
 @task
