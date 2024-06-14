@@ -47,7 +47,6 @@ def read_lines_from_gcs(bucket_name: str, file_name: str, storage_client: storag
     """
     logger = get_run_logger()
     logger.info(f"Leyendo archivo {file_name} desde el bucket {bucket_name}...")
-    json_objects = []
     try:
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(file_name)
@@ -59,24 +58,23 @@ def read_lines_from_gcs(bucket_name: str, file_name: str, storage_client: storag
                         json_obj = json.loads(line.strip())
                         yield {
                             "day": json_obj.get("day"),
-                            "position": json_obj.get("event_data", {}).get("position"),
-                            "value": json_obj.get("event_data", {}).get("value_prop"),
-                            "user_id": json_obj.get("user_id")
+                            "position": int(json_obj.get("event_data", {}).get("position")),
+                            "value_prop": json_obj.get("event_data", {}).get("value_prop"),
+                            "user_id": int(json_obj.get("user_id"))
                         }
                     except json.JSONDecodeError as e:
                         logger.error(f"Error al decodificar JSON en línea: {line.strip()} - Error: {e}")
             elif cleaned_filename == "pays":
-                reader = csv.reader(file)
+                reader = csv.DictReader(file)
                 for line in reader:
                     try:
-                        line_data = {
-                            "pay_date": line[0],
-                            "total": line[1],
-                            "user_id": line[2],
-                            "value_prop": line[3]
+                        yield {
+                            "pay_date": line["pay_date"],
+                            "total": line["total"],
+                            "user_id": line["user_id"],
+                            "value_prop": line["value_prop"]
                         }
-                        yield line_data
-                    except IndexError as e:
+                    except KeyError as e:
                         logger.error(f"Error al procesar linea CSV: {line} - Error: {e}")
                     
     except Exception as e:
