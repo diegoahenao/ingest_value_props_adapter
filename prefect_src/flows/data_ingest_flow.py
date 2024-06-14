@@ -13,7 +13,7 @@ from tasks.get_data import (
 )
 from tasks.post_data import send_batch_to_api
 
-files_to_process: List[str] = ["pays.csv"]
+files_to_process: List[str] = ["taps.json", "prints.json", "pays.csv"]
 google_drive_folder_id: str = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
 bucket_name: str = os.environ.get("BUCKET_NAME")
 batch_size: int = int(os.environ.get("BATCH_SIZE"))
