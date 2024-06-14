@@ -4,8 +4,10 @@ from pydrive2.auth import GoogleAuth, ServiceAccountCredentials
 import os
 import json
 from google.cloud import storage
+import httpx
 
 GOOGLE_SERVICE_ACCOUNT_JSON: str = json.loads(os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON"))
+TOKEN_URL = os.environ.get('TOKEN_URL')
 
 @task
 def authenticate_drive() -> GoogleDrive:
@@ -25,3 +27,28 @@ def authenticate_gcs() -> storage.Client:
     storage_client = storage.Client.from_service_account_info(GOOGLE_SERVICE_ACCOUNT_JSON)
     logger.info(f"Generado objeto storage.Client para autenticación")
     return storage_client
+
+@task
+def get_token(api_key: str) -> str:
+  """Generar un token temporal usando una API Key
+  
+  Args:
+    api_key (str): Api key.
+  
+  Returns:
+    str: Token temporal.
+  """
+  auth_url = TOKEN_URL
+  try:
+    response = httpx.post(auth_url, json={"api_key": api_key})
+    response.raise_for_status()
+    token = response.json().get("access_token")
+    if not token:
+      raise ValueError('No se puedo obtener el token temporal en la respuesta')
+    return token
+  except httpx.RequestError as e:
+    print(f'Un error ocurrió mientras se solicitaba el token: {e}')
+    raise
+  except httpx.HTTPStatusError as e:
+    print(f'Error en la respuesta: {e.response.status_code}')
+    raise
